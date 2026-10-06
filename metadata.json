@@ -1,0 +1,6 @@
+{
+  "name": "Bayan AI - المساعد المعرفي الإسلامي",
+  "description": "مساعد إسلامي ذكي قائم على استرجاع المعرفة الموثوقة (RAG) للإجابة عن التساؤلات الفقهية والشبهات مع عزو دقيق للمصادر وتنبيه الفتوى.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

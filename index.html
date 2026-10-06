@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>بصيرة | مساعد الداعية</title>
+    <meta name="description" content="بصيرة | مساعد الداعية - مساعد إسلامي ودعوي ذكي قائم على البحث والتحقق من مصادر الشريعة الموثوقة للإجابة عن التساؤلات الفقهية والشبهات الفكرية مع عزو دقيق للمصادر." />
+    <meta property="og:title" content="بصيرة | مساعد الداعية" />
+    <meta property="og:description" content="مساعد الداعية الإسلامي الذكي للبحث والتحقق الشرعي، وتفكيك الشبهات، وعزو الأدلة الموثقة." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Tajawal:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script>
+      (function() {
+        try {
+          var theme = localStorage.getItem('baseera_theme') || localStorage.getItem('bayan_theme');
+          var supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (theme === 'dark' || (!theme && supportDarkMode)) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="bg-[#F8FAFC] dark:bg-[#0B0F14] text-stone-900 dark:text-[#F3F4F6] font-sans antialiased selection:bg-emerald-100 dark:selection:bg-emerald-950 selection:text-emerald-900 dark:selection:text-emerald-200 transition-colors duration-200">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
