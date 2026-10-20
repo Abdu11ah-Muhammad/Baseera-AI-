@@ -25,6 +25,11 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({ evidence, isHighligh
       evidence.sourceName.includes('ابن ماجه')
     ));
 
+  const isTurathBook =
+    evidence.type === 'book' ||
+    Boolean(evidence.sourceUrl && evidence.sourceUrl.includes('turath.io')) ||
+    Boolean(evidence.book || evidence.author || evidence.page || evidence.volume);
+
   // Determine clean display details
   const hasDirectLink = Boolean(evidence.sourceUrl && evidence.sourceUrl.trim().length > 0);
 
@@ -53,6 +58,16 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({ evidence, isHighligh
               <span className="text-base">📚</span>
               <span>{evidence.sourceName}</span>
             </div>
+          ) : isTurathBook ? (
+            <div className="flex items-center gap-1.5 text-emerald-950 dark:text-emerald-300 font-bold text-xs sm:text-sm font-tajawal">
+              <span className="text-base">📜</span>
+              <span>{evidence.book || evidence.sourceName}</span>
+              {evidence.author && (
+                <span className="text-xs text-stone-500 dark:text-[#A7B0BE] font-normal">
+                  — {evidence.author}
+                </span>
+              )}
+            </div>
           ) : (
             <div className="flex items-center gap-1.5 text-emerald-950 dark:text-emerald-300 font-bold text-xs sm:text-sm font-tajawal">
               <BookOpen className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
@@ -61,7 +76,7 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({ evidence, isHighligh
           )}
 
           <span className="text-[11px] px-2 py-0.5 rounded-md bg-stone-200/80 dark:bg-[#1E293B] text-stone-700 dark:text-[#A7B0BE] font-sans font-medium">
-            {evidence.sourceType || (isQuran ? 'قرآن كريم' : isHadith ? 'حديث نبوي' : 'مرجع موثق')}
+            {evidence.sourceType || (isQuran ? 'قرآن كريم' : isHadith ? 'حديث نبوي' : isTurathBook ? 'كتاب معتمد' : 'مرجع موثق')}
           </span>
         </div>
 
@@ -77,7 +92,7 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({ evidence, isHighligh
       {/* Body content */}
       <div className="p-3.5 sm:p-4 space-y-3 text-xs sm:text-sm">
         {/* Specific Reference coordinates */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-stone-50/60 dark:bg-[#111827]/60 p-2.5 rounded-xl border border-stone-200/60 dark:border-[#273244]/60 font-tajawal">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs bg-stone-50/60 dark:bg-[#111827]/60 p-2.5 rounded-xl border border-stone-200/60 dark:border-[#273244]/60 font-tajawal">
           {isQuran ? (
             <>
               {evidence.surah && (
@@ -93,7 +108,7 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({ evidence, isHighligh
                 </div>
               )}
             </>
-          ) : (
+          ) : isHadith ? (
             <>
               {evidence.referenceNumber && (
                 <div>
@@ -114,10 +129,43 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({ evidence, isHighligh
                 </div>
               )}
             </>
+          ) : (
+            <>
+              {(evidence.book || evidence.sourceName) && (
+                <div>
+                  <span className="text-stone-500 dark:text-[#A7B0BE] ml-1">الكتاب:</span>
+                  <strong className="text-stone-800 dark:text-[#F3F4F6]">{evidence.book || evidence.sourceName}</strong>
+                </div>
+              )}
+              {evidence.author && (
+                <div>
+                  <span className="text-stone-500 dark:text-[#A7B0BE] ml-1">المؤلف:</span>
+                  <span className="text-stone-800 dark:text-[#F3F4F6] font-medium">{evidence.author}</span>
+                </div>
+              )}
+              {evidence.volume && (
+                <div>
+                  <span className="text-stone-500 dark:text-[#A7B0BE] ml-1">المجلد:</span>
+                  <span className="text-stone-800 dark:text-[#F3F4F6] font-sans font-medium">ج {evidence.volume}</span>
+                </div>
+              )}
+              {evidence.page && (
+                <div>
+                  <span className="text-stone-500 dark:text-[#A7B0BE] ml-1">الصفحة:</span>
+                  <span className="text-stone-800 dark:text-[#F3F4F6] font-sans font-medium">ص {evidence.page}</span>
+                </div>
+              )}
+              {evidence.chapter && (
+                <div className="sm:col-span-2">
+                  <span className="text-stone-500 dark:text-[#A7B0BE] ml-1">المبحث/الباب:</span>
+                  <span className="text-stone-800 dark:text-[#F3F4F6] font-medium">{evidence.chapter}</span>
+                </div>
+              )}
+            </>
           )}
 
-          {/* Reference detail fallback if neither surah/ayah nor refNumber parsed */}
-          {!evidence.surah && !evidence.referenceNumber && evidence.referenceDetail && (
+          {/* Reference detail fallback */}
+          {!evidence.surah && !evidence.referenceNumber && !evidence.page && evidence.referenceDetail && (
             <div className="sm:col-span-2">
               <span className="text-stone-500 dark:text-[#A7B0BE] ml-1">الموضع في المصدر:</span>
               <span className="text-stone-800 dark:text-[#F3F4F6] font-medium">{evidence.referenceDetail}</span>
@@ -129,7 +177,7 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({ evidence, isHighligh
         {evidence.retrievedText && (
           <div className="p-3 rounded-xl bg-stone-50/90 dark:bg-[#111827] border border-stone-200/80 dark:border-[#273244] space-y-1">
             <span className="text-[11px] font-bold text-stone-500 dark:text-[#A7B0BE] block">
-              {isQuran ? 'نص الآية الكريمة المستشهد بها:' : 'نص الحديث النبوي الشريف:'}
+              {isQuran ? 'نص الآية الكريمة المستشهد بها:' : isHadith ? 'نص الحديث النبوي الشريف:' : 'النص المسترجع من المرجع المعتمد:'}
             </span>
             <p className="font-amiri text-sm sm:text-base text-stone-900 dark:text-emerald-100 leading-relaxed">
               «{evidence.retrievedText}»
@@ -158,10 +206,20 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({ evidence, isHighligh
                 title={
                   isQuran
                     ? `فتح الآية ${evidence.ayah || ''} مباشرة في المصدر الرسمي (quran.com)`
-                    : `فتح الحديث رقم ${evidence.referenceNumber || ''} مباشرة في المصدر الرسمي (sunnah.com)`
+                    : isHadith
+                    ? `فتح الحديث رقم ${evidence.referenceNumber || ''} مباشرة في المصدر الرسمي (sunnah.com)`
+                    : `فتح الصفحة ${evidence.page || ''} في مكتبة تراث الإسلامية (app.turath.io)`
                 }
               >
-                <span>{isQuran ? 'فتح الآية مباشرة' : isHadith ? 'فتح الحديث مباشرة' : 'المصدر المباشر'}</span>
+                <span>
+                  {isQuran
+                    ? 'فتح الآية مباشرة'
+                    : isHadith
+                    ? 'فتح الحديث مباشرة'
+                    : isTurathBook
+                    ? 'فتح في مكتبة تراث'
+                    : 'المصدر المباشر'}
+                </span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>

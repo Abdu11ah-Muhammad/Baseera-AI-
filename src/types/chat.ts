@@ -36,7 +36,7 @@ export interface SourceReference {
 
 export interface TraceableEvidence {
   id: number;
-  type?: 'quran' | 'hadith' | 'fiqh' | 'scholar' | 'custom' | string;
+  type?: 'quran' | 'hadith' | 'fiqh' | 'scholar' | 'book' | 'custom' | string;
   sourceName: string;
   sourceType: string;
   referenceDetail: string;
@@ -44,7 +44,10 @@ export interface TraceableEvidence {
   surah?: string;
   ayah?: number;
   book?: string;
+  author?: string;
   chapter?: string;
+  volume?: string | number;
+  page?: string | number;
   grade?: string;
   retrievedText: string;
   usageContext: string;

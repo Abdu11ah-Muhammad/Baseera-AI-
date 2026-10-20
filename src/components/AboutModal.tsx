@@ -88,6 +88,35 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, onStart
           </div>
         </div>
 
+        {/* Developer Attribution & Contact */}
+        <div className="p-3 mb-5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800/50 text-xs font-tajawal">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-1.5">
+            <span className="font-bold text-emerald-950 dark:text-emerald-300">
+              تطوير المشروع:
+            </span>
+            <span className="text-stone-800 dark:text-stone-200 font-semibold font-sans">
+              المهندس Abdullah M. Refaat
+            </span>
+          </div>
+          <div className="flex items-center gap-3 text-[11px] text-stone-600 dark:text-stone-400">
+            <a
+              href="https://www.linkedin.com/in/abdu11ah-mhmd/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1 font-sans font-medium"
+            >
+              LinkedIn ↗
+            </a>
+            <span>•</span>
+            <a
+              href="mailto:abdullahmhmd17@outlook.com"
+              className="text-emerald-700 dark:text-emerald-400 hover:underline font-sans font-medium"
+            >
+              abdullahmhmd17@outlook.com
+            </a>
+          </div>
+        </div>
+
         {/* Action Button */}
         <div className="flex justify-end gap-2 pt-2 border-t border-stone-150 dark:border-[#273244]">
           <button

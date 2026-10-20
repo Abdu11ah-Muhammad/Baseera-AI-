@@ -164,3 +164,12 @@ export function resolveHadithDeepLink(sourceName?: string, hadithNumber?: string
 
   return null;
 }
+
+export function resolveTurathDeepLink(bookId?: number | string, page?: number | string): string | null {
+  if (!bookId) return null;
+  const cleanId = String(bookId).replace(/[^\d]/g, '');
+  if (!cleanId) return null;
+  const cleanPage = page ? String(page).replace(/[^\d]/g, '') : '';
+  return cleanPage ? `https://app.turath.io/book/${cleanId}?page=${cleanPage}` : `https://app.turath.io/book/${cleanId}`;
+}
+

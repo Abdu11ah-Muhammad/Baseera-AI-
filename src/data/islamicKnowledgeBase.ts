@@ -490,6 +490,48 @@ export function queryIslamicKnowledgeBase(
 ): Omit<ChatMessage, 'id' | 'role' | 'timestamp'> {
   const normalizedQuery = userQuery.trim().toLowerCase();
 
+  // Check Developer Attribution & Contact queries
+  const isDevQuery = [
+    /من\s*(طورك|صنعك|أنشأك|برمجك|سواك|عملك|خلقك|صممك)/i,
+    /من\s*(هو\s*)?(مطور|مبرمج|صاحب|مبتكر|مؤسس|صانع)\s*(بصيرة|التطبيق|الموقع|البرنامج)?/i,
+    /من\s*(طور|صنع|أنشأ|برمج|صمم)\s*(بصيرة|التطبيق|الموقع|البرنامج)/i,
+    /(معلومات|بيانات|حساب|ايميل|إيميل|رابط|طرق?\s*التواصل\s*مع)\s*(المطور|المبرمج)/i,
+    /(تواصل\s*مع\s*المطور|كيف\s*أتواصل\s*مع\s*المطور|كيف\s*اتواصل\s*مع\s*المطور)/i,
+    /(who\s*(created|developed|programmed|made|built|coded)\s*(you|baseera|this\s*app))/i,
+    /(who\s*is\s*(the\s*)?(developer|creator|programmer|author|maker))/i,
+    /(developer\s*(contact|info|email|linkedin)|contact\s*(the\s*)?developer)/i,
+  ].some((p) => p.test(normalizedQuery));
+
+  if (isDevQuery) {
+    const devText = "تم تطوير بصيرة بواسطة المهندس Abdullah M. Refaat\n\nيمكنك التواصل مع المطوّر عبر:\n- LinkedIn: https://www.linkedin.com/in/abdu11ah-mhmd/\n- Email: abdullahmhmd17@outlook.com";
+    return {
+      content: devText,
+      briefAnswer: "تم تطوير بصيرة بواسطة المهندس Abdullah M. Refaat.",
+      explanation: devText,
+      evidence: "التوثيق الرسمي لتطبيق بصيرة | مساعد الداعية",
+      summary: "تطوير المهندس Abdullah M. Refaat مع إمكانية التواصل عبر LinkedIn أو البريد الإلكتروني.",
+      classification: ['هوية النظام والمطور'],
+      contentLevel: 'A',
+      contentLevelLabel: 'A — معلومة مباشرة',
+      referenceAdequacy: 'مرتفعة',
+      adequacyRationale: ['بيانات هوية وتطوير تطبيق بصيرة الرسمية المعتمدة'],
+      traceableEvidences: [],
+      automatedChecks: {
+        sourcesFound: true,
+        textsVerified: true,
+        noPersonalFatwaClaim: true,
+        noConflictDetected: true,
+      },
+      suitabilityCheck: 'فحص سلامة المحتوى واتساقه مع المصادر المعتمدة: تم تقديم بيانات المطور المعتمدة بدقة.',
+      dialogueMethodologySummary: 'تقديم بيانات الهوية والمطور بشفافية ومهنية.',
+      nextStepSuggestion: 'يمكنك التواصل مع المطوّر عبر الروابط الموضحة أو طرح أي استفسار شرعي.',
+      category: 'general',
+      isControversial: false,
+      disclaimer: '',
+      sources: []
+    };
+  }
+
   // 1. First check if user added custom documents and if query matches any custom document
   for (const doc of customDocs) {
     const docWords = doc.title.toLowerCase().split(/\s+/);
