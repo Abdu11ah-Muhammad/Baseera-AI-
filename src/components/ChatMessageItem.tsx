@@ -165,11 +165,15 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     noConflictDetected: true,
   };
 
-  // Helper to render text with interactive inline citations e.g. [1], [2]
-  const renderTextWithCitations = (text: string) => {
+  // Helper to parse inline markdown (bolding, inline code) and interactive citations [1], [2]
+  const renderInlineMarkdownAndCitations = (text: string) => {
     if (!text) return null;
-    const parts = text.split(/(\[\d+\])/g);
+    // Match [1], [2] citations, **bold text**, and `code`
+    const parts = text.split(/(\[\d+\]|\*\*[^*]+\*\*|`[^`]+`)/g);
     return parts.map((part, pIdx) => {
+      if (!part) return null;
+
+      // 1. Citation button [N]
       const citationMatch = part.match(/^\[(\d+)\]$/);
       if (citationMatch) {
         const cId = parseInt(citationMatch[1], 10);
@@ -180,61 +184,166 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             onClick={() => handleCitationClick(cId)}
             title={`عرض تفاصيل الدليل [${cId}]`}
             aria-label={`الدليل رقم ${cId}`}
-            className="inline-flex items-center justify-center text-[10px] sm:text-xs font-bold font-sans text-emerald-800 dark:text-emerald-300 bg-emerald-100/90 dark:bg-emerald-950 px-1.5 py-0.2 mx-0.5 rounded border border-emerald-300 dark:border-emerald-700/80 hover:bg-emerald-200 dark:hover:bg-emerald-900 transition-colors cursor-pointer select-none"
+            className="inline-flex items-center justify-center text-[10px] sm:text-xs font-bold font-sans text-emerald-800 dark:text-emerald-300 bg-emerald-100/90 dark:bg-emerald-950 px-1.5 py-0.2 mx-0.5 rounded border border-emerald-300 dark:border-emerald-700/80 hover:bg-emerald-200 dark:hover:bg-emerald-900 transition-colors cursor-pointer select-none align-baseline"
           >
             [{cId}]
           </button>
         );
       }
-      return part;
+
+      // 2. Bold text **text**
+      if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+        const inner = part.slice(2, -2);
+        return (
+          <strong key={pIdx} className="font-bold text-stone-900 dark:text-white">
+            {inner}
+          </strong>
+        );
+      }
+
+      // 3. Inline code `text`
+      if (part.startsWith('`') && part.endsWith('`') && part.length >= 2) {
+        const inner = part.slice(1, -1);
+        return (
+          <code
+            key={pIdx}
+            className="px-1.5 py-0.5 mx-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 text-xs font-mono"
+          >
+            {inner}
+          </code>
+        );
+      }
+
+      // 4. Regular text segment
+      return <React.Fragment key={pIdx}>{part}</React.Fragment>;
     });
   };
 
-  // Format paragraphs nicely
+  // Pre-normalizer to prevent text collapse and guarantee clean structural paragraph breaks
+  const normalizeContentMarkdown = (raw: string): string => {
+    if (!raw) return '';
+    return raw
+      .replace(/\r\n/g, '\n')
+      // Ensure headings have double blank lines before & after
+      .replace(/([^\n])\n(#{1,4}\s+[^\n]+)/g, '$1\n\n$2')
+      .replace(/(#{1,4}\s+[^\n]+)\n([^\n#])/g, '$1\n\n$2')
+      // Ensure horizontal dividers have double blank lines
+      .replace(/([^\n])\n(---|\*\*\*|___)\n/g, '$1\n\n$2\n\n')
+      // Ensure numbered lists following a paragraph start on a fresh block
+      .replace(/([^\n])\n(\d+[\.\)]\s+[^\n]+)/g, '$1\n\n$2')
+      // Ensure bullet lists following a paragraph start on a fresh block
+      .replace(/([^\n])\n([•\*\-]\s+[^\n]+)/g, '$1\n\n$2')
+      // Collapse 3+ consecutive newlines to 2
+      .replace(/\n{3,}/g, '\n\n');
+  };
+
+  // Format paragraphs into clean, structured Arabic Markdown components (zero inline collapse)
   const renderFormattedParagraphs = (content: string) => {
     if (!content) return null;
-    const paragraphs = content.split('\n\n');
-    return paragraphs.map((para, idx) => {
-      const trimmed = para.trim();
+    const normalized = normalizeContentMarkdown(content);
+    const blocks = normalized.split('\n\n');
+
+    return blocks.map((block, idx) => {
+      const trimmed = block.trim();
       if (!trimmed) return null;
 
-      if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+      // 1. Horizontal divider
+      if (trimmed === '---' || trimmed === '***' || trimmed === '___') {
+        return <hr key={idx} className="my-5 border-t border-stone-200 dark:border-[#273244]" />;
+      }
+
+      // 2. Heading (e.g. ### Section or ## Section or # Section)
+      const headingMatch = trimmed.match(/^(#{1,4})\s+(.+)$/);
+      if (headingMatch) {
+        const title = headingMatch[2].trim();
+        return (
+          <div
+            key={idx}
+            className="flex items-center gap-2 mt-5 mb-2.5 pt-1 text-emerald-950 dark:text-emerald-200 font-bold font-tajawal text-base sm:text-lg border-r-4 border-emerald-600 dark:border-emerald-400 pr-3 py-1 bg-emerald-50/50 dark:bg-emerald-950/25 rounded-l-lg"
+          >
+            <span className="text-emerald-700 dark:text-emerald-400 text-sm">✦</span>
+            <span>{renderInlineMarkdownAndCitations(title)}</span>
+          </div>
+        );
+      }
+
+      // 3. Standalone bold category title e.g. **أولاً: أركان الصلاة:**
+      if (/^\*\*[^*]+\*\*[:]?$/.test(trimmed)) {
+        const categoryTitle = trimmed.replace(/\*\*/g, '').trim();
+        return (
+          <div
+            key={idx}
+            className="flex items-center gap-2 mt-4 mb-2 font-bold font-tajawal text-sm sm:text-base text-emerald-900 dark:text-emerald-300 pr-2 border-r-2 border-emerald-600 dark:border-emerald-400"
+          >
+            <span>{renderInlineMarkdownAndCitations(categoryTitle)}</span>
+          </div>
+        );
+      }
+
+      // 4. Blockquote (> ...)
+      if (trimmed.startsWith('>')) {
+        const quoteContent = trimmed
+          .split('\n')
+          .map((line) => line.replace(/^>\s?/, ''))
+          .join('\n');
+        return (
+          <div
+            key={idx}
+            className="my-3 p-3 sm:p-4 bg-emerald-50/30 dark:bg-emerald-950/20 border-r-4 border-emerald-700 dark:border-emerald-500 rounded-l-xl text-stone-800 dark:text-[#F3F4F6] font-tajawal text-sm sm:text-base leading-relaxed italic"
+          >
+            {renderInlineMarkdownAndCitations(quoteContent)}
+          </div>
+        );
+      }
+
+      // 5. Bullet list (* item, - item, • item)
+      if (trimmed.startsWith('* ') || trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
         const lines = trimmed.split('\n');
         return (
-          <ul key={idx} className="space-y-1.5 my-2 pr-2">
-            {lines.map((l, lIdx) => (
-              <li key={lIdx} className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-700 dark:bg-emerald-400 mt-2 shrink-0" />
-                <span className="text-stone-800 dark:text-[#F3F4F6] font-tajawal">
-                  {renderTextWithCitations(l.replace(/^[\*\-]\s*/, ''))}
-                </span>
-              </li>
-            ))}
+          <ul key={idx} className="space-y-2.5 my-3 pr-1">
+            {lines.map((l, lIdx) => {
+              const cleaned = l.replace(/^[\*\-•]\s*/, '').trim();
+              if (!cleaned) return null;
+              return (
+                <li key={lIdx} className="flex items-start gap-2.5 font-tajawal text-sm sm:text-base leading-relaxed text-stone-800 dark:text-[#F3F4F6]">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400 mt-2 shrink-0 ring-2 ring-emerald-100 dark:ring-emerald-950" />
+                  <div className="flex-1">
+                    {renderInlineMarkdownAndCitations(cleaned)}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         );
       }
 
-      if (/^\d+\.\s/.test(trimmed)) {
+      // 6. Numbered list (1. item, 2. item)
+      if (/^\d+[\.\)]\s/.test(trimmed)) {
         const lines = trimmed.split('\n');
         return (
-          <div key={idx} className="space-y-1.5 my-2">
+          <div key={idx} className="space-y-2.5 my-3">
             {lines.map((l, lIdx) => {
-              const m = l.match(/^(\d+)\.\s*(.*)/);
+              const m = l.match(/^(\d+)[\.\)]\s*(.*)/);
               if (m) {
+                const num = m[1];
+                const itemText = m[2];
                 return (
-                  <div key={lIdx} className="flex items-start gap-2 leading-relaxed">
-                    <span className="font-bold text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-300 px-1.5 py-0.5 rounded shrink-0 mt-0.5">
-                      {m[1]}
+                  <div
+                    key={lIdx}
+                    className="flex items-start gap-3 p-2.5 sm:p-3 rounded-xl bg-stone-50/60 dark:bg-[#111827]/60 border border-stone-200/60 dark:border-[#273244]/60"
+                  >
+                    <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-800 dark:bg-emerald-700 text-white font-bold text-xs shrink-0 font-sans shadow-2xs mt-0.5">
+                      {num}
                     </span>
-                    <span className="text-stone-800 dark:text-[#F3F4F6] font-tajawal">
-                      {renderTextWithCitations(m[2])}
-                    </span>
+                    <div className="flex-1 min-w-0 font-tajawal text-stone-800 dark:text-[#F3F4F6] text-sm sm:text-base leading-relaxed">
+                      {renderInlineMarkdownAndCitations(itemText)}
+                    </div>
                   </div>
                 );
               }
               return (
-                <p key={lIdx} className="text-stone-800 dark:text-[#F3F4F6] font-tajawal">
-                  {renderTextWithCitations(l)}
+                <p key={lIdx} className="text-stone-800 dark:text-[#F3F4F6] font-tajawal text-sm sm:text-base leading-relaxed">
+                  {renderInlineMarkdownAndCitations(l)}
                 </p>
               );
             })}
@@ -242,9 +351,10 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         );
       }
 
+      // 7. Standard paragraph
       return (
-        <p key={idx} className="leading-relaxed text-stone-800 dark:text-[#F3F4F6] font-tajawal whitespace-pre-line">
-          {renderTextWithCitations(trimmed)}
+        <p key={idx} className="leading-relaxed text-stone-800 dark:text-[#F3F4F6] font-tajawal text-sm sm:text-base mb-3 whitespace-pre-line">
+          {renderInlineMarkdownAndCitations(trimmed)}
         </p>
       );
     });
@@ -280,22 +390,24 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               <span>{activeLevelStyle.label}</span>
             </span>
 
-            {/* Reference Adequacy Badge (كفاية المرجعية - Clickable to open audit) */}
-            <button
-              type="button"
-              onClick={() => setIsAuditOpen((prev) => !prev)}
-              className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md font-sans border transition-colors cursor-pointer ${
-                isHighAdequacy
-                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/80 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
-                  : isMediumAdequacy
-                  ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/80 hover:bg-amber-100 dark:hover:bg-amber-900/60'
-                  : 'bg-stone-100 dark:bg-[#1A202C] text-stone-700 dark:text-[#A7B0BE] border-stone-200 dark:border-[#273244]'
-              }`}
-              title="انقر لعرض أسباب كفاية المرجعية وتقرير التحقق الآلي"
-            >
-              <Gauge className="w-3 h-3" />
-              <span>كفاية المرجعية: {referenceAdequacy}</span>
-            </button>
+            {/* Reference Adequacy Badge (Only when references are present) */}
+            {evidences.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsAuditOpen((prev) => !prev)}
+                className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md font-sans border transition-colors cursor-pointer ${
+                  isHighAdequacy
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/80 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
+                    : isMediumAdequacy
+                    ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/80 hover:bg-amber-100 dark:hover:bg-amber-900/60'
+                    : 'bg-stone-100 dark:bg-[#1A202C] text-stone-700 dark:text-[#A7B0BE] border-stone-200 dark:border-[#273244]'
+                }`}
+                title="انقر لعرض أسباب كفاية المرجعية وتقرير التحقق الآلي"
+              >
+                <Gauge className="w-3 h-3" />
+                <span>كفاية المرجعية: {referenceAdequacy}</span>
+              </button>
+            )}
           </div>
 
           {/* Timestamp & Copy Action */}
@@ -325,7 +437,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               </span>
             </div>
             <p className="font-semibold text-emerald-950 dark:text-emerald-100 text-sm sm:text-base leading-relaxed font-tajawal">
-              {renderTextWithCitations(message.briefAnswer!)}
+              {renderInlineMarkdownAndCitations(message.briefAnswer!)}
             </p>
           </div>
         )}
@@ -349,9 +461,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               <BookOpen className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
               <span>الدليل الشرعي:</span>
             </div>
-            <p className="text-xs sm:text-sm text-stone-800 dark:text-[#F3F4F6] font-tajawal leading-relaxed">
-              {renderTextWithCitations(message.evidence)}
-            </p>
+            <div className="text-xs sm:text-sm text-stone-800 dark:text-[#F3F4F6] font-tajawal leading-relaxed">
+              {renderFormattedParagraphs(message.evidence)}
+            </div>
           </div>
         )}
 
@@ -359,9 +471,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         {message.summary && message.summary.trim() !== '' && (
           <div className="mb-4 p-3 bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30 rounded-xl text-xs sm:text-sm font-tajawal">
             <strong className="text-emerald-900 dark:text-emerald-300 block mb-1">الخلاصة:</strong>
-            <p className="text-stone-700 dark:text-[#A7B0BE] leading-relaxed">
-              {message.summary}
-            </p>
+            <div className="text-stone-700 dark:text-[#A7B0BE] leading-relaxed">
+              {renderFormattedParagraphs(message.summary)}
+            </div>
           </div>
         )}
 
@@ -373,7 +485,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               <span>بيان الخلاف الفقهي المعتبر:</span>
             </div>
             <div className="text-xs sm:text-sm text-stone-700 dark:text-[#A7B0BE] leading-relaxed font-tajawal">
-              {renderTextWithCitations(message.dispute)}
+              {renderFormattedParagraphs(message.dispute)}
             </div>
           </div>
         )}
@@ -486,53 +598,40 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         {/* 🌟 Layer 2: Four Collapsible Sections (Accordions) 🌟 */}
         <div className="space-y-2 mt-4 pt-3 border-t border-stone-150 dark:border-[#273244]">
           
-          {/* Accordion 1: 📖 الأدلة والمراجع المسترجعة */}
-          <div className="border border-stone-200 dark:border-[#273244] rounded-xl overflow-hidden bg-stone-50/40 dark:bg-[#111827]/40">
-            <button
-              type="button"
-              onClick={() => setIsEvidenceOpen((prev) => !prev)}
-              className="w-full p-3 flex items-center justify-between text-xs sm:text-sm font-bold text-stone-800 dark:text-[#F3F4F6] hover:bg-stone-100/70 dark:hover:bg-[#1A202C] transition-colors cursor-pointer select-none"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-base">📖</span>
-                <span className="font-tajawal">
-                  الأدلة والمراجع المسترجعة ({evidences.length > 0 ? evidences.length : message.sourcesSearched?.length || 0})
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs font-normal text-stone-500 dark:text-[#A7B0BE]">
-                <span>{isEvidenceOpen ? 'إخفاء' : 'عرض التفاصيل'}</span>
-                {isEvidenceOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </div>
-            </button>
+          {/* Accordion 1: 📖 الأدلة والمراجع المسترجعة (Only rendered when references are present) */}
+          {evidences.length > 0 && (
+            <div className="border border-stone-200 dark:border-[#273244] rounded-xl overflow-hidden bg-stone-50/40 dark:bg-[#111827]/40">
+              <button
+                type="button"
+                onClick={() => setIsEvidenceOpen((prev) => !prev)}
+                className="w-full p-3 flex items-center justify-between text-xs sm:text-sm font-bold text-stone-800 dark:text-[#F3F4F6] hover:bg-stone-100/70 dark:hover:bg-[#1A202C] transition-colors cursor-pointer select-none"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-base">📖</span>
+                  <span className="font-tajawal">
+                    الأدلة والمراجع المسترجعة ({evidences.length})
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-normal text-stone-500 dark:text-[#A7B0BE]">
+                  <span>{isEvidenceOpen ? 'إخفاء' : 'عرض التفاصيل'}</span>
+                  {isEvidenceOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </div>
+              </button>
 
-            {isEvidenceOpen && (
-              <div className="p-3 sm:p-4 border-t border-stone-200 dark:border-[#273244] bg-white dark:bg-[#151B23] space-y-3">
-                {evidences.length > 0 ? (
-                  evidences.map((ev: TraceableEvidence) => {
+              {isEvidenceOpen && (
+                <div className="p-3 sm:p-4 border-t border-stone-200 dark:border-[#273244] bg-white dark:bg-[#151B23] space-y-3">
+                  {evidences.map((ev: TraceableEvidence) => {
                     const isHighlighted = highlightedEvidenceId === ev.id;
                     return (
                       <div key={ev.id} id={`evidence-card-${message.id}-${ev.id}`}>
                         <EvidenceCard evidence={ev} isHighlighted={isHighlighted} />
                       </div>
                     );
-                  })
-                ) : message.sourcesSearched && message.sourcesSearched.length > 0 ? (
-                  <div className="space-y-1.5">
-                    <span className="text-xs font-bold text-stone-600 dark:text-[#A7B0BE] block">المصادر المعتمدة المفهرسة:</span>
-                    <ul className="list-disc list-inside text-xs text-stone-700 dark:text-[#F3F4F6] space-y-1 font-tajawal">
-                      {message.sourcesSearched.map((s, idx) => (
-                        <li key={idx}>{s}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : (
-                  <p className="text-xs text-stone-500 dark:text-[#A7B0BE]">
-                    تعذر تحميل تفاصيل المصدر حاليًا.
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Accordion 2: 🛡️ تقرير التحقق الآلي */}
           <div className="border border-stone-200 dark:border-[#273244] rounded-xl overflow-hidden bg-stone-50/40 dark:bg-[#111827]/40">
@@ -689,7 +788,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 rounded-lg text-rose-950 dark:text-rose-200">
                     <strong className="block mb-1 font-tajawal">إحالة إلزامية لمفتٍ مؤهل:</strong>
                     <p className="leading-relaxed">
-                      نظراً لأن هذه المسألة تتعلق بوقائع وأحوال شخصية خاصة، فإن الأحكام تتغير بحسب الملابسات والنيات. يُرجى مراجعة دار الإفتاء الرسمية أو عالم موثوق لعرض تفاصيل الواقعة كاملة.
+                      نظراً لأن هذه المسألة تتعلق بوقائع وأحوال شخصية خاصة، فإن الأحكام تتغير بحسب الملابسات والنيات. يُرجى استشارة الجهات الإفتائية المعتمدة أو عالم موثوق ومؤهل لعرض تفاصيل الواقعة كاملة.
                     </p>
                   </div>
                 ) : message.nextStepSuggestion ? (

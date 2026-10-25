@@ -81,14 +81,15 @@ export const VERIFIED_SOURCES: SourceReference[] = [
     quoteExcerpt: 'توثيق دقيق ومبسط للمصطلحات والمسائل الفقهية مع عزو كل قول إلى مصادره المذهبية الأصلية.'
   },
   {
-    id: 'dar_ifta',
-    name: 'دار الإفتاء المصرية وهيئة كبار العلماء',
-    category: 'المؤسسات الإفتائية الرسمية',
-    type: 'فتاوى معتمدة ونوازل معاصرة',
+    id: 'turath_library',
+    name: 'مكتبة تراث الإسلامية (Turath.io)',
+    category: 'كتب التراث الإسلامي الرقمية',
+    type: 'أمهات كتب الفقه والحديث والتفسير',
     status: 'معتمد',
-    author: 'أمانة الفتوى ولجنة الفتوى الرئيسية',
-    referenceDetail: 'الفتاوى المعتمدة الصادرة عن دور الإفتاء ومجالس العلماء في العالم العربي',
-    quoteExcerpt: 'تراعي مقاصد الشريعة، والواقع المعاش، وفقه المآلات، والتيسير المنضبط بالأدلة الشرعية.'
+    author: 'مكتبة رقمية مفتوحة ومحققة لكتب التراث الإسلامي',
+    referenceDetail: 'تضم أمهات مصادر التراث الإسلامي مصنفة حسب الأبواب والمؤلفين مع توثيق الأجزاء والصفحات (https://app.turath.io/books/categories)',
+    quoteExcerpt: 'استرجاع نصوص الكتب التراثية وأقوال الأئمة والمذاهب بنصوصها الأصلية مع التوثيق برقم الكتاب والجزء والصفحة والرابط المباشر.',
+    url: 'https://app.turath.io/books/categories'
   }
 ];
 
@@ -211,7 +212,7 @@ export const KNOWLEDGE_DATABASE: KnowledgeBaseItem[] = [
   {
     keywords: ['بخاخ الربو', 'بخاخ ربو', 'قطرة العين للصائم', 'قطرة الأذن للصائم', 'مفطرات بخاخ الربو'],
     response: {
-      content: `بحثت المجامع الفقهية المعاصرة -وعلى رأسها مجمع الفقه الإسلامي الدولي وهيئة كبار العلماء ودار الإفتاء- حكم النوازل الطبية للمريض الصائم، وخرجت بالضوابط المحققة التالية:
+      content: `بحثت المجامع الفقهية المعتمدة -وعلى رأسها مجمع الفقه الإسلامي الدولي وبحوث الفقهاء المحققين- حكم النوازل الطبية للمريض الصائم، وخرجت بالضوابط المحققة التالية:
 
 1. **بخاخ الربو (الغازي المضغوط):**
    - **الرأي الراجح والمعتمد لدى المجامع الفقهية:** لا يُفطر؛ لأن المادة المبخوخة تذهب إلى القصبات الهوائية لتوسيع مجرى التنفس وليست طعاماً ولا شراباً ولا في معناهما، وما ينفذ منها للمعدة جزء يسير جداً معفو عنه قياساً على ما يتبقى من أثر المضمضة والاستياك.
@@ -254,9 +255,9 @@ export const KNOWLEDGE_DATABASE: KnowledgeBaseItem[] = [
         }
       ],
       sources: [
-        VERIFIED_SOURCES[2], // IIFA
-        VERIFIED_SOURCES[4], // Dar Ifta
-        VERIFIED_SOURCES[5]  // Kwt
+        VERIFIED_SOURCES[4], // IIFA
+        VERIFIED_SOURCES[6], // Kwt
+        VERIFIED_SOURCES[7]  // Turath Library
       ]
     }
   },
@@ -364,9 +365,9 @@ export const KNOWLEDGE_DATABASE: KnowledgeBaseItem[] = [
    - **الشركات المختلطة:** نشاطها مباح ولكن تتعامل بجزء يسير من الفوائد الربوية إيداعاً أو اقتراضاً؛ اختلف فيها الفقهاء المعاصرون، ووضعت هيئة المحاسبة والمراجعة للمؤسسات المالية الإسلامية (أيوفي AAOIFI) نسباً وضوابط للتطهير، بينما يرى آخرون التحرز منها.
 
 2. **العملات الرقمية المشفرة (Cryptocurrency):**
-   - صدرت فيها قرارات متعددة من دور الإفتاء (مثل دار الإفتاء المصرية، ورئاسة الشؤون الدينية بتركيا، وبعض الباحثين في المجمع الفقهي) بالتحذير والمنع في صورتها الراهنة، لعلل منها:
+   - صدرت فيها قرارات وفتاوى متعددة من المجامع الفقهية وهيئات الرقابة الشرعية بالتحذير والمنع في صورتها الراهنة، لعلل منها:
      أ. شدة الغرر والمخاطرة والمضاربات الوهمية السريعة.
-     ب. عدم صدورها عن جهة نقدية أو بنك مركزي ضامن.
+     ب. عدم صدورها عن جهة نقدية أو سلطة معتبرة ضامنة للقيمة.
      ج. استخدام بعضها في غسيل الأموال والأنشطة غير المشروعة.
    - في المقابل يرى باحثون اقتصاديون إسلاميون أنها مال معتبر متى استوفت الاعتراف القانوني وأمان الاستخدام في المشاريع التقنية المفيدة. والمسألة ما تزال قيد المتابعة الفقهية الجماعية.`,
       category: 'muamalat',
@@ -394,8 +395,9 @@ export const KNOWLEDGE_DATABASE: KnowledgeBaseItem[] = [
         }
       ],
       sources: [
-        VERIFIED_SOURCES[2],
-        VERIFIED_SOURCES[4]
+        VERIFIED_SOURCES[4],
+        VERIFIED_SOURCES[6],
+        VERIFIED_SOURCES[7]
       ]
     }
   },
@@ -490,39 +492,40 @@ export function queryIslamicKnowledgeBase(
 ): Omit<ChatMessage, 'id' | 'role' | 'timestamp'> {
   const normalizedQuery = userQuery.trim().toLowerCase();
 
-  // Check Developer Attribution & Contact queries
+  // Check Developer Attribution & Contact queries (colloquial and standard Arabic)
   const isDevQuery = [
-    /من\s*(طورك|صنعك|أنشأك|برمجك|سواك|عملك|خلقك|صممك)/i,
-    /من\s*(هو\s*)?(مطور|مبرمج|صاحب|مبتكر|مؤسس|صانع)\s*(بصيرة|التطبيق|الموقع|البرنامج)?/i,
-    /من\s*(طور|صنع|أنشأ|برمج|صمم)\s*(بصيرة|التطبيق|الموقع|البرنامج)/i,
-    /(معلومات|بيانات|حساب|ايميل|إيميل|رابط|طرق?\s*التواصل\s*مع)\s*(المطور|المبرمج)/i,
-    /(تواصل\s*مع\s*المطور|كيف\s*أتواصل\s*مع\s*المطور|كيف\s*اتواصل\s*مع\s*المطور)/i,
-    /(who\s*(created|developed|programmed|made|built|coded)\s*(you|baseera|this\s*app))/i,
-    /(who\s*is\s*(the\s*)?(developer|creator|programmer|author|maker))/i,
+    /(من|مين|ايش\s*مين|منهو|أنت\s*مين|انت\s*مين)\s*(اللي\s*)?(أنشأك|انشاك|سواك|صنعك|طورك|برمجك|عملك|بناك|خلقك|صممك)/i,
+    /(من|مين|منهو)\s*(هو\s*)?(الذي|التي)?\s*(أنشأ|انشأ|سوى|صنع|طور|برمج|عمل|بنى|صمم)\s*(بصيرة|التطبيق|الموقع|البرنامج|هذا\s*المشروع)?/i,
+    /(من|مين|منهو)\s*(المسؤول|المسئول|الراعي|المالك|صاحب|مطور|مبرمج|صانع|مؤسس|مهندس|مشرف)\s*(عنك|عن\s*بصيرة|عن\s*التطبيق|عن\s*الموقع|عن\s*البرنامج|بصيرة)?/i,
+    /(من|مين)\s*(سواك|عملك|أنشأك|انشاك|برمجك|طورك|صنعك)/i,
+    /(معلومات|بيانات|حساب|ايميل|إيميل|رابط|طرق?\s*التواصل|كيف\s*أتواصل|كيف\s*اتواصل|اراسل|أراسل|تواصل)\s*(مع\s*)?(المطور|المبرمج|المهندس|صاحب\s*التطبيق|مطور\s*بصيرة)/i,
+    /(عبد\s*الله\s*محمد|عبدالله\s*محمد|عبد\s*الله\s*محمد\s*رفعت|عبدالله\s*محمد\s*رفعت|Abdullah\s*Muhammad|Abdullah\s*Refaat)/i,
+    /(who\s*(created|developed|programmed|made|built|coded|designed)\s*(you|baseera|this\s*app|this\s*website)?)/i,
+    /(who\s*is\s*(responsible\s*for|behind|the\s*developer\s*of|the\s*creator\s*of)\s*(you|baseera|this\s*app|this\s*website)?)/i,
     /(developer\s*(contact|info|email|linkedin)|contact\s*(the\s*)?developer)/i,
   ].some((p) => p.test(normalizedQuery));
 
   if (isDevQuery) {
-    const devText = "تم تطوير بصيرة بواسطة المهندس Abdullah M. Refaat\n\nيمكنك التواصل مع المطوّر عبر:\n- LinkedIn: https://www.linkedin.com/in/abdu11ah-mhmd/\n- Email: abdullahmhmd17@outlook.com";
+    const devText = "تم تطوير بصيرة بواسطة المهندس Abdullah Muhammad.\n\nيمكنك التواصل مع المطوّر عبر:\n- LinkedIn: https://www.linkedin.com/in/abdu11ah-mhmd/\n- البريد الإلكتروني: abdullahmhmd17@outlook.com";
     return {
       content: devText,
-      briefAnswer: "تم تطوير بصيرة بواسطة المهندس Abdullah M. Refaat.",
+      briefAnswer: "تم تطوير بصيرة بواسطة المهندس Abdullah Muhammad.",
       explanation: devText,
-      evidence: "التوثيق الرسمي لتطبيق بصيرة | مساعد الداعية",
-      summary: "تطوير المهندس Abdullah M. Refaat مع إمكانية التواصل عبر LinkedIn أو البريد الإلكتروني.",
+      evidence: "", // NO religious citations attached
+      summary: "تطوير المهندس Abdullah Muhammad مع إمكانية التواصل عبر LinkedIn أو البريد الإلكتروني.",
       classification: ['هوية النظام والمطور'],
       contentLevel: 'A',
-      contentLevelLabel: 'A — معلومة مباشرة',
+      contentLevelLabel: 'المستوى A — هوية المطور',
       referenceAdequacy: 'مرتفعة',
       adequacyRationale: ['بيانات هوية وتطوير تطبيق بصيرة الرسمية المعتمدة'],
       traceableEvidences: [],
       automatedChecks: {
-        sourcesFound: true,
-        textsVerified: true,
+        sourcesFound: false,
+        textsVerified: false,
         noPersonalFatwaClaim: true,
         noConflictDetected: true,
       },
-      suitabilityCheck: 'فحص سلامة المحتوى واتساقه مع المصادر المعتمدة: تم تقديم بيانات المطور المعتمدة بدقة.',
+      suitabilityCheck: 'فحص سلامة المحتوى: تم تقديم بيانات المطور المعتمدة بدقة.',
       dialogueMethodologySummary: 'تقديم بيانات الهوية والمطور بشفافية ومهنية.',
       nextStepSuggestion: 'يمكنك التواصل مع المطوّر عبر الروابط الموضحة أو طرح أي استفسار شرعي.',
       category: 'general',

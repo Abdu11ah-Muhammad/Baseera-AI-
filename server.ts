@@ -3,9 +3,10 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI, Type } from '@google/genai';
-import { resolveQuranDeepLink, resolveHadithDeepLink, resolveTurathDeepLink } from './src/serverDeepLinkHelper.js';
+import { resolveQuranDeepLink, resolveHadithDeepLink, resolveTurathDeepLink, verifyCitationIntegrity } from './src/serverDeepLinkHelper.js';
 import { retrieveMultiQueryTurathPassages, TurathBookPassage } from './src/services/turathService.js';
-import { analyzeQuestionIntentFast, validateAnswerRelevance } from './src/services/relevanceEngine.js';
+import { analyzeQuestionIntentFast, validateAnswerRelevance, filterRelevantCitations } from './src/services/relevanceEngine.js';
+import { APP_CONFIG, getDeveloperAnswerText, getAppIdentityText } from './src/config/appConfig.js';
 
 dotenv.config();
 
@@ -78,7 +79,7 @@ const BASEERA_DAIYAH_CHARTER = `بصيرة | مساعد الداعية — ال�
   
 - المستوى D — حالة شخصية تستوجب الإحالة:
   مثل: قضايا الطلاق المعلق، النزاعات الزوجية الخاصة، المواريث والتركات الشائكة، النذور والكفارات المقترنة بوقائع شخصية.
-  التعامل: ممنوع إصدار فتوى شخصية حاسمة. يجب تقديم الإطار الفقهي العام الموثق، مع توضيح حاسم بأن الوقائع الشخصية قد تغير الحكم، وإحالة السائل بوضوح إلى دار الإفتاء الرسمية أو عالم موثوق ومؤهل.
+  التعامل: ممنوع إصدار فتوى شخصية حاسمة. يجب تقديم الإطار الفقهي العام الموثق، مع توضيح حاسم بأن الوقائع الشخصية قد تغير الحكم، وإحالة السائل بوضوح إلى الجهات الإفتائية المعتمدة أو عالم موثوق ومؤهل.
 
 ━━━━━━━━━━━━━━━━━━━━
 نظام الاستشهاد الدقيق القابل للتتبع (Traceable Evidence):
@@ -100,26 +101,39 @@ const BASEERA_DAIYAH_CHARTER = `بصيرة | مساعد الداعية — ال�
 ━━━━━━━━━━━━━━━━━━━━
 هوية المطور والجهة المطوِّرة (Developer Identity & Attribution):
 ━━━━━━━━━━━━━━━━━━━━
-تم تطوير بصيرة بواسطة المهندس Abdullah M. Refaat (المهندس عبد الله محمد).
+تم تطوير بصيرة بواسطة المهندس Abdullah Muhammad (Engineer Abdullah Muhammad).
 إذا سأل المستخدم:
-- من طورك؟ أو من صنعك؟ أو من أنشأك أو برمجك؟
-- من هو مطور بصيرة؟ أو من برمج هذا التطبيق أو الموقع؟
+- من طورك؟ أو من صنعك؟ أو من أنشأك أو برمجك؟ أو مين اللي أنشأك؟ أو مين المسؤول عن بصيرة؟
+- من هو مطور بصيرة؟ أو من برمج هذا التطبيق أو الموقع؟ أو مين المطور؟
 - أو طلب بيانات أو طرق التواصل مع المطور (LinkedIn أو Email):
 أجب باللغة العربية بالمعلومات الرسمية التالية:
 
-"تم تطوير بصيرة بواسطة المهندس Abdullah M. Refaat
+"تم تطوير بصيرة بواسطة المهندس Abdullah Muhammad.
 
 يمكنك التواصل مع المطوّر عبر:
 - LinkedIn: https://www.linkedin.com/in/abdu11ah-mhmd/
-- Email: abdullahmhmd17@outlook.com"
+- البريد الإلكتروني: abdullahmhmd17@outlook.com"
 
 القواعد الإلزامية:
 1. الرد باللغة العربية، بما يتوافق مع بقية التطبيق.
-2. تقديم هذه التفاصيل حصراً عند سؤال المستخدم عن المطور، أو الصانع، أو المؤلف، أو معلومات التواصل.
+2. تقديم هذه التفاصيل حصراً عند سؤال المستخدم عن المطور، أو الصانع، أو المؤلف، أو المسؤول، أو معلومات التواصل.
 3. عدم ادعاء أن الذكاء الاصطناعي نفسه هو المهندس البشري.
 4. عدم تخمين أو اختراع أي بريد إلكتروني.
 5. الحفاظ على الرد موجزاً ومهنياً.
-6. الحفاظ على كافة سلوكيات ووظائف الإجابة الإسلامية في سائر الأسئلة.`;
+6. ممنوع منعاً باتاً إرفاق أي آيات قرآنية أو أحاديث أو كتب فقهية أو مراجع إسلامية مع إجابات هوية المطور أو الأسئلة العامة.
+7. الحفاظ على كافة سلوكيات ووظائف الإجابة الإسلامية في سائر الأسئلة الدينية.
+
+━━━━━━━━━━━━━━━━━━━━
+ميثاق التنسيق والعرض البصري للنصوص (Formatting & Markdown Standard):
+━━━━━━━━━━━━━━━━━━━━
+1. الاعتماد المطلق على تنسيق Markdown الواضح والأنيق والمنظم.
+2. ترك فراغ وسطر فارغ (\n\n) بين كل فقرة، وكل عنوان، وكل عنصر في القوائم المرقمة والنقطية لمنع تداخل النصوص.
+3. منع دمج العناوين في أسطر الفقرات نهائياً (Fix inline text collapse): يجب أن يبدأ كل قسم وعنوان وتصنيف فرعي في سطر مستقل جديد.
+4. الهيكلية المعيارية لعرض القوائم والمسائل المصنفة:
+   • جملة تمهيدية واضحة، يليها سطر فارغ (\n\n).
+   • التصنيف أو القسم الرئيسي بخط عريض **...** أو عنوان Markdown في سطر مستقل.
+   • بنود مرقمة تبدأ بعنوان فرعي بارز **الفرع:** يليه الإيضاح المباشر.
+5. استخدام الترقيم، والنقاط، والخط العريض لتنسيق المحتوى العربي بأعلى درجات الجاذبية والوضوح البصري وسهولة القراءة.`;
 
 // Structured JSON response schema for Baseera AI
 const BASEERA_RESPONSE_SCHEMA = {
@@ -268,36 +282,36 @@ app.post('/api/ask', async (req, res) => {
 
     const safeHistory = Array.isArray(conversationHistory) ? conversationHistory : [];
 
-    // Stage 1: Question Understanding & Intent Analysis
+    // Stage 1: Question Understanding & Intent Analysis (Pre-retrieval)
     const analysis = analyzeQuestionIntentFast(question, safeHistory);
 
-    // Immediate authoritative Developer Identity & Attribution Handler
+    // 1. Authoritative Developer Identity & Attribution Handler
     if (analysis.isDeveloperQuery) {
-      const devAnswer = "تم تطوير بصيرة بواسطة المهندس Abdullah M. Refaat\n\nيمكنك التواصل مع المطوّر عبر:\n- LinkedIn: https://www.linkedin.com/in/abdu11ah-mhmd/\n- Email: abdullahmhmd17@outlook.com";
+      const devAnswer = getDeveloperAnswerText();
       return res.json({
         success: true,
         classification: ['هوية النظام والمطور'],
         contentLevel: 'A',
-        contentLevelLabel: 'المستوى A — معلومة مباشرة',
+        contentLevelLabel: 'المستوى A — هوية المطور',
         referenceAdequacy: 'مرتفعة',
         adequacyRationale: ['بيانات هوية وتطوير تطبيق بصيرة الرسمية المعتمدة'],
         evidenceLevel: 'مرتفعة',
         evidenceLevelArabic: 'مرتفعة',
         understanding: 'سياق الطلب: استفسار عن مطور تطبيق بصيرة ومعلومات التواصل الرسمية',
-        briefAnswer: 'تم تطوير بصيرة بواسطة المهندس Abdullah M. Refaat.',
+        briefAnswer: `تم تطوير بصيرة بواسطة ${APP_CONFIG.displayName}.`,
         explanation: devAnswer,
-        evidence: 'التوثيق الرسمي لتطبيق بصيرة | مساعد الداعية',
-        summary: 'تطوير المهندس Abdullah M. Refaat مع إمكانية التواصل عبر LinkedIn أو البريد الإلكتروني.',
-        traceableEvidences: [],
+        evidence: '', // NO religious citations
+        summary: `تطوير ${APP_CONFIG.displayName} مع إمكانية التواصل عبر LinkedIn أو البريد الإلكتروني.`,
+        traceableEvidences: [], // EMPTY
         dispute: '',
-        sourcesSearched: ['وثائق بصيرة الرسمية'],
+        sourcesSearched: [], // EMPTY
         automatedChecks: {
-          sourcesFound: true,
-          textsVerified: true,
+          sourcesFound: false,
+          textsVerified: false,
           noPersonalFatwaClaim: true,
           noConflictDetected: true,
         },
-        suitabilityCheck: 'فحص سلامة المحتوى واتساقه مع المصادر المعتمدة: تم تقديم بيانات المطور المعتمدة بدقة.',
+        suitabilityCheck: 'فحص سلامة المحتوى: تم تقديم بيانات المطور المعتمدة بدقة.',
         dialogueMethodologySummary: 'تقديم بيانات الهوية والمطور بشفافية ومهنية وفق الميثاق.',
         nextStepSuggestion: 'يمكنك التواصل مع المطوّر عبر الروابط الموضحة أو طرح أي استفسار شرعي.',
         reviewStatus: 'automated',
@@ -307,9 +321,83 @@ app.post('/api/ask', async (req, res) => {
       });
     }
 
-    // If ambiguous or missing crucial facts: return gentle clarifying question in Arabic
+    // 2. Application Identity Handler ("ما اسمك", "من أنت", "عرفني بنفسك", "ما هو تطبيق بصيرة")
+    if (analysis.isAppIdentityQuery) {
+      const appAnswer = getAppIdentityText();
+      return res.json({
+        success: true,
+        classification: ['التعريف بتطبيق بصيرة'],
+        contentLevel: 'A',
+        contentLevelLabel: 'المستوى A — التعريف بالنظام',
+        referenceAdequacy: 'مرتفعة',
+        adequacyRationale: ['التعريف الرسمي المعتمد لتطبيق بصيرة'],
+        evidenceLevel: 'مرتفعة',
+        evidenceLevelArabic: 'مرتفعة',
+        understanding: 'سياق الطلب: استفسار عن هوية تطبيق بصيرة وطبيعة عمله',
+        briefAnswer: appAnswer,
+        explanation: appAnswer,
+        evidence: '', // NO religious citations
+        summary: 'بصيرة هو مساعد ذكاء اصطناعي إسلامي لخدمة الباحثين وطلاب العلم والدعاة.',
+        traceableEvidences: [], // EMPTY
+        dispute: '',
+        sourcesSearched: [], // EMPTY
+        automatedChecks: {
+          sourcesFound: false,
+          textsVerified: false,
+          noPersonalFatwaClaim: true,
+          noConflictDetected: true,
+        },
+        suitabilityCheck: 'فحص سلامة المحتوى: تم تقديم هوية التطبيق المعتمدة.',
+        dialogueMethodologySummary: 'التعريف برسالة التطبيق وهدفه العلمي.',
+        nextStepSuggestion: 'يمكنك البدء بطرح أي سؤال فقهي أو استفسار عن مسألة شرعية أو حديث نبوي.',
+        reviewStatus: 'automated',
+        disclaimer: '',
+        text: appAnswer,
+        isRealAi: true,
+      });
+    }
+
+    // 3. Conversational Greeting Handler ("السلام عليكم", "مرحبا", "أهلاً", "شكراً")
+    if (analysis.isGreetingQuery) {
+      const greetingAnswer = question.includes('شكر')
+        ? 'عفواً وبارك الله فيك، ونسعد دائماً بخدمتك والإجابة على أي تساؤل فقهي أو معرفي موثق.'
+        : 'وعليكم السلام ورحمة الله وبركاته، مرحباً بك في «بصيرة | مساعد الداعية». كيف يمكنني مساعدتك في مسألتك الفقهية أو المعرفية اليوم؟';
+      return res.json({
+        success: true,
+        classification: ['تحية وترحيب'],
+        contentLevel: 'A',
+        contentLevelLabel: 'المستوى A — تحية وترحيب',
+        referenceAdequacy: 'مرتفعة',
+        adequacyRationale: ['تحية وترحيب عام'],
+        evidenceLevel: 'مرتفعة',
+        evidenceLevelArabic: 'مرتفعة',
+        understanding: 'سياق الطلب: تحية وترحيب من الباحث/المستفهم',
+        briefAnswer: greetingAnswer,
+        explanation: greetingAnswer,
+        evidence: '', // NO religious citations
+        summary: '',
+        traceableEvidences: [], // EMPTY
+        dispute: '',
+        sourcesSearched: [], // EMPTY
+        automatedChecks: {
+          sourcesFound: false,
+          textsVerified: false,
+          noPersonalFatwaClaim: true,
+          noConflictDetected: true,
+        },
+        suitabilityCheck: 'فحص سلامة المحتوى: رد التحية بأحسن منها وفق أدب الحوار.',
+        dialogueMethodologySummary: 'التفاعل بأدب وترحيب مع الداعية والمسترشد.',
+        nextStepSuggestion: 'تفضل بكتابة سؤالك الفقهي أو موضوعك الشرعي لنوافيك بالإجابة الموثقة.',
+        reviewStatus: 'automated',
+        disclaimer: '',
+        text: greetingAnswer,
+        isRealAi: true,
+      });
+    }
+
+    // 4. Ambiguous / Missing crucial facts: return gentle clarifying question in Arabic
     if (analysis.isAmbiguous && analysis.clarifyingQuestion) {
-      const clarText = `### الاستيضاح المطلوب\n${analysis.clarifyingQuestion}\n\nنظراً لأن الأحكام الشرعية تختلف باختلاف الوقائع والشروط والظروف، يرجى بيان تفاصيل استفسارك لنتمكن من إفادتك بالحكم الموثق والأدلة الدقيقة.`;
+      const clarText = `### الاستيضاح المطلوب\n\n${analysis.clarifyingQuestion}\n\n---\n\nنظراً لأن الأحكام الشرعية تختلف باختلاف الوقائع والشروط والظروف، يرجى بيان تفاصيل استفسارك لنتمكن من إفادتك بالحكم الموثق والأدلة الدقيقة.`;
       return res.json({
         success: true,
         classification: ['استيضاح وتحديد المسألة'],
@@ -322,32 +410,18 @@ app.post('/api/ask', async (req, res) => {
         understanding: 'سياق الطلب: سؤال مجمل يحتمل أوجه متعددة ويحتاج إلى تحديد المسألة والوقائع بدقة',
         briefAnswer: analysis.clarifyingQuestion,
         explanation: 'تختلف الأحكام الشرعية والفقهية باختلاف القيود والشروط وحال المستفتي، لذا فإن تحديد موضوع السؤال يضمن الإجابة المباشرة الموثقة دون خطأ.',
-        evidence: 'قال الله تعالى: ﴿فَاسْأَلُوا أَهْلَ الذِّكْرِ إِن كُنتُمْ لَا تَعْلَمُونَ﴾ [النحل: 43]',
+        evidence: '',
         summary: 'يرجى تزويد بصيرة بتفاصيل المسألة لعرض الحكم والأدلة المباشرة.',
-        traceableEvidences: [
-          {
-            id: 1,
-            type: 'quran',
-            sourceName: 'القرآن الكريم',
-            sourceType: 'قرآن كريم',
-            referenceDetail: 'سورة النحل — الآية 43',
-            referenceNumber: '43',
-            surah: 'النحل',
-            ayah: 43,
-            retrievedText: 'فَاسْأَلُوا أَهْلَ الذِّكْرِ إِن كُنتُمْ لَا تَعْلَمُونَ',
-            usageContext: 'بيان وجوب الاستفسار والتثبت في المسائل الشرعية',
-            sourceUrl: 'https://quran.com/16/43',
-          },
-        ],
+        traceableEvidences: [],
         dispute: '',
-        sourcesSearched: ['القرآن الكريم'],
+        sourcesSearched: [],
         automatedChecks: {
-          sourcesFound: true,
-          textsVerified: true,
+          sourcesFound: false,
+          textsVerified: false,
           noPersonalFatwaClaim: true,
           noConflictDetected: true,
         },
-        suitabilityCheck: 'فحص سلامة المحتوى واتساقه مع المصادر المعتمدة: تم تقديم طلب استيضاح تحرزاً من التخمين.',
+        suitabilityCheck: 'فحص سلامة المحتوى: تم تقديم طلب استيضاح تحرزاً من التخمين.',
         dialogueMethodologySummary: 'اعتماد منهج التثبت والاستفصال قبل إصدار الأحكام.',
         nextStepSuggestion: 'تحديد المسألة المطروحة أو كتابة تفاصيل الحالة.',
         reviewStatus: 'automated',
@@ -357,12 +431,14 @@ app.post('/api/ask', async (req, res) => {
       });
     }
 
-    // Stage 2: Source-Grounded Retrieval (Turath.io Islamic Books Knowledge Base + Custom Docs)
+    // Stage 2: Strictly Conditional Retrieval (ONLY when question category requires Islamic references)
     let turathPassages: TurathBookPassage[] = [];
-    try {
-      turathPassages = await retrieveMultiQueryTurathPassages(analysis.searchKeywords, 4);
-    } catch (turathErr) {
-      console.warn('[Turath Retrieval] Warning fetching books:', turathErr);
+    if (analysis.requiresReferences && analysis.searchKeywords.length > 0) {
+      try {
+        turathPassages = await retrieveMultiQueryTurathPassages(analysis.searchKeywords, 4);
+      } catch (turathErr) {
+        console.warn('[Turath Retrieval] Warning fetching books:', turathErr);
+      }
     }
 
     let turathContext = '';
@@ -430,16 +506,18 @@ ${historyContext}
 8. الخلاصة الموجزة للحكم أو المسألة.
 9. تقييم "كفاية المرجعية": "مرتفعة" أو "متوسطة" أو "غير كافية" مع نقاط أسباب فعلية وديناميكية مبنية على الأدلة المسترجعة.
 10. بناء قائمة الأدلة المسترجعة القابلة للتتبع (Traceable Evidences) المرتبطة فعلياً بالسؤال، مع تعبئة حقول: book, author, volume, page للكتب المسترجعة.
-11. إذا لم تجد دليلاً كافياً في المسألة، صرّح بوضوح بعدم توفر أدلة كافية ولا تختلق أي حكم أو نص من الذاكرة.`;
+11. إذا لم تجد دليلاً كافياً في المسألة، صرّح بوضوح بعدم توفر أدلة كافية ولا تختلق أي حكم أو نص من الذاكرة.
+12. التنسيق والعرض البصري للنصوص (Formatting & Speed - CRITICAL):
+    - اعتمد دائماً تنسيق Markdown المنظم مع ترك سطر فارغ مزدوج (\n\n) بين كل عنوان وفقرة وبند.
+    - ضع كل نقطة رئيسية أو تصنيف فرعي في سطر جديد مستقل، وتجنب دمج العناوين في نصوص الفقرات نهائياً.
+    - عند صياغة القوائم: ضع جملة تمهيدية تليها مسافة فارغة (\n\n)، ثم عنوان القسم عريضاً **...** في سطر مستقل، ثم بنوداً مرقمة أو منقطة تبدأ ببيان عريض موجز **النقطة:** يليه الشرح الدقيق.
+    - استخدم الخط العريض (Bold)، والقوائم النقطية والمرقمة، والفواصل البصرية لتكون الإجابة في غاية الوضوح وسهولة القراءة دون أي تأخير في سرعة التوليد.`;
 
     // Stage 4: Model Execution
     let responseText = '';
     const modelsToTry = [
-      'gemini-3.6-flash',
       'gemini-3.5-flash',
-      'gemini-3.8-flash',
-      'gemini-3.7-flash',
-      'gemini-flash-latest',
+      'gemini-3.6-flash',
     ];
 
     for (const modelName of modelsToTry) {
@@ -522,7 +600,7 @@ ${historyContext}
         suitabilityCheck: 'فحص سلامة المحتوى واتساقه مع المصادر المعتمدة: تم استرجاع النصوص الأصلية من مصادر التراث المعتمدة.',
         dialogueMethodologySummary: 'اعتماد منهج التوثيق المرجعي والاستدلال بالنصوص المعتمدة.',
         nextStepSuggestion: 'يمكنك مراجعة رابط المصدر المباشر للاطلاع على النص كاملاً في سياقه.',
-        fatwaDisclaimer: '⚠️ تنبيه شرعي: هذه إجابة عامة موثقة وليست فتوى شخصية، ويُنصح بالرجوع إلى دار الإفتاء الرسمية في الحالات الفردية الخاصة.',
+        fatwaDisclaimer: '⚠️ تنبيه شرعي: هذه إجابة عامة موثقة وليست فتوى شخصية، ويُنصح بالرجوع إلى الجهات الإفتائية المعتمدة أو عالم موثوق ومؤهل في الحالات الفردية الخاصة.',
       };
     }
 
@@ -623,11 +701,23 @@ ${historyContext}
         }
       }
 
-      const finalUrl = resolvedUrl || '';
+      // Apply strict deterministic citation integrity check
+      const check = verifyCitationIntegrity({
+        type: isQuran ? 'quran' : isHadith ? 'hadith' : 'book',
+        sourceName: ev.sourceName || ev.book,
+        surah: ev.surah,
+        ayah: ev.ayah,
+        referenceNumber: ev.referenceNumber,
+        bookId: ev.bookId,
+        page: ev.page,
+        sourceUrl: resolvedUrl || ev.sourceUrl,
+      });
+
+      const finalUrl = check.verifiedUrl || '';
 
       return {
         id: ev.id || idx + 1,
-        type: ev.type || (isQuran ? 'quran' : isHadith ? 'hadith' : 'book'),
+        type: check.citationType,
         sourceName: ev.sourceName || (ev.book ? ev.book : 'مرجع إسلامي معتمد'),
         sourceType: ev.sourceType || (isQuran ? 'قرآن كريم' : isHadith ? 'حديث نبوي' : 'كتاب معتمد'),
         referenceDetail: ev.referenceDetail || (ev.page ? `ص ${ev.page}` : ''),
@@ -646,56 +736,72 @@ ${historyContext}
       };
     });
 
-    // If Turath passages were retrieved and not yet present in evidence list, add the top supporting passage
-    if (turathPassages.length > 0 && enrichedEvidences.length < 5) {
-      for (const tp of turathPassages.slice(0, 2)) {
-        const alreadyExists = enrichedEvidences.some(
-          (e: any) => e.book?.includes(tp.bookName) || e.sourceName?.includes(tp.bookName)
-        );
-        if (!alreadyExists && tp.snippet) {
-          enrichedEvidences.push({
-            id: enrichedEvidences.length + 1,
-            type: 'book',
-            sourceName: tp.bookName,
-            sourceType: tp.categoryLabel || 'كتب التراث الإسلامي',
-            referenceDetail: `${tp.volume ? `المجلد ${tp.volume} - ` : ''}الصفحة ${tp.page}`,
-            referenceNumber: String(tp.page || ''),
-            book: tp.bookName,
-            author: tp.authorName,
-            volume: tp.volume || '',
-            page: String(tp.page || ''),
-            chapter: tp.headings?.length ? tp.headings.join(' > ') : '',
-            retrievedText: tp.snippet,
-            usageContext: 'توثيق الحكم من كتب التراث الإسلامي المعتمدة',
-            sourceUrl: tp.sourceUrl,
-          });
-        }
-      }
+    // Strict relevance filtering of citations:
+    // Only keep references that actually support the claims made in the answer.
+    // If external references were not required or not relevant, returns empty array.
+    const finalEvidences = filterRelevantCitations(
+      enrichedEvidences,
+      analysis.resolvedQuestion,
+      `${parsedData.briefAnswer || ''} ${parsedData.explanation || ''}`,
+      analysis.requiresReferences
+    );
+
+    const hasValidEvidences = finalEvidences.length > 0;
+    const finalSourcesSearched = hasValidEvidences
+      ? (parsedData.sources && parsedData.sources.length > 0 ? parsedData.sources : finalEvidences.map((e: any) => `${e.sourceName}${e.author ? ` — ${e.author}` : ''}`))
+      : [];
+    const finalEvidence = hasValidEvidences ? (parsedData.evidence || '') : '';
+
+    // Format rich unified text matching the requested constitution layout with clean line breaks
+    // Only output sections that actually contain relevant data
+    const textSections: string[] = [];
+    if (parsedData.briefAnswer && parsedData.briefAnswer.trim()) {
+      textSections.push(`### الإجابة المختصرة\n\n${parsedData.briefAnswer.trim()}`);
+    }
+    if (parsedData.explanation && parsedData.explanation.trim()) {
+      textSections.push(`### التوضيح\n\n${parsedData.explanation.trim()}`);
+    }
+    if (finalEvidence && finalEvidence.trim()) {
+      textSections.push(`### الدليل\n\n${finalEvidence.trim()}`);
+    }
+    if (parsedData.summary && parsedData.summary.trim()) {
+      textSections.push(`### الخلاصة\n\n${parsedData.summary.trim()}`);
+    }
+    if (parsedData.dispute && parsedData.dispute.trim() !== '') {
+      textSections.push(`### الخلاف الفقهي\n\n${parsedData.dispute.trim()}`);
+    }
+    if (finalSourcesSearched.length > 0) {
+      textSections.push(`### المصادر والمراجع\n\n${finalSourcesSearched.map((s: string, idx: number) => `${idx + 1}. **${s}**`).join('\n\n')}`);
+    }
+    if (analysis.requiresReferences) {
+      textSections.push(`### كفاية المرجعية\n\n**${referenceAdequacy}**`);
+    }
+    if (parsedData.fatwaDisclaimer && analysis.requiresReferences) {
+      textSections.push(parsedData.fatwaDisclaimer);
     }
 
-    // Format rich unified text matching the requested constitution layout
-    const formattedText = `### الإجابة المختصرة\n${parsedData.briefAnswer || ''}\n\n### التوضيح\n${parsedData.explanation || ''}\n\n### الدليل\n${parsedData.evidence || ''}${parsedData.summary ? `\n\n### الخلاصة\n${parsedData.summary}` : ''}${parsedData.dispute && parsedData.dispute.trim() !== '' ? `\n\n### الخلاف الفقهي\n${parsedData.dispute}` : ''}\n\n### المصادر والمراجع\n${(parsedData.sources || []).map((s: string, idx: number) => `${idx + 1}. ${s}`).join('\n')}\n\n### كفاية المرجعية\n${referenceAdequacy}\n\n${parsedData.fatwaDisclaimer || ''}`;
+    const formattedText = textSections.join('\n\n---\n\n');
 
     return res.json({
       success: true,
-      classification: parsedData.classification || [],
+      classification: parsedData.classification || [analysis.categoryLabel],
       contentLevel: contentLevel,
       contentLevelLabel: parsedData.contentLevelLabel || `المستوى ${contentLevel}`,
       referenceAdequacy: referenceAdequacy,
-      adequacyRationale: parsedData.adequacyRationale || [],
+      adequacyRationale: hasValidEvidences ? (parsedData.adequacyRationale || []) : ['إجابة مباشرة لا تتطلب مراجع خارجية'],
       evidenceLevel: referenceAdequacy,
       evidenceLevelArabic: referenceAdequacy,
-      understanding: parsedData.understanding || `سياق الطلب: استفسار حول ${question}`,
+      understanding: parsedData.understanding || `سياق الطلب: ${analysis.coreSubject}`,
       briefAnswer: parsedData.briefAnswer || '',
       explanation: parsedData.explanation || '',
-      evidence: parsedData.evidence || '',
+      evidence: finalEvidence,
       summary: parsedData.summary || '',
-      traceableEvidences: enrichedEvidences,
+      traceableEvidences: finalEvidences,
       dispute: parsedData.dispute || '',
-      sourcesSearched: parsedData.sources || [],
-      automatedChecks: parsedData.automatedChecks || {
-        sourcesFound: true,
-        textsVerified: true,
+      sourcesSearched: finalSourcesSearched,
+      automatedChecks: {
+        sourcesFound: hasValidEvidences,
+        textsVerified: hasValidEvidences,
         noPersonalFatwaClaim: contentLevel !== 'D',
         noConflictDetected: true,
       },
@@ -703,7 +809,9 @@ ${historyContext}
       dialogueMethodologySummary: parsedData.dialogueMethodologySummary || 'تم اعتماد أسلوب الحوار المنضبط المناسب لسياق السؤال.',
       nextStepSuggestion: parsedData.nextStepSuggestion || '',
       reviewStatus: 'automated',
-      disclaimer: parsedData.fatwaDisclaimer || '⚠️ تنبيه شرعي: هذه إجابة عامة وليست فتوى شخصية، وقد تختلف الأحكام باختلاف التفاصيل والمذاهب. يُنصح بالرجوع إلى عالم/مفتٍ موثوق في الحالات الخاصة.',
+      disclaimer: analysis.requiresReferences
+        ? (parsedData.fatwaDisclaimer || '⚠️ تنبيه شرعي: هذه إجابة عامة وليست فتوى شخصية، وقد تختلف الأحكام باختلاف التفاصيل والمذاهب. يُنصح بالرجوع إلى عالم/مفتٍ موثوق في الحالات الخاصة.')
+        : '',
       text: formattedText,
       isRealAi: true,
     });

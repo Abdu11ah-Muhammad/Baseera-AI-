@@ -95,7 +95,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, onStart
               تطوير المشروع:
             </span>
             <span className="text-stone-800 dark:text-stone-200 font-semibold font-sans">
-              المهندس Abdullah M. Refaat
+              المهندس Abdullah Muhammad
             </span>
           </div>
           <div className="flex items-center gap-3 text-[11px] text-stone-600 dark:text-stone-400">

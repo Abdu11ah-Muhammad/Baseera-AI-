@@ -195,7 +195,7 @@ export const SourcesDrawer: React.FC<SourcesDrawerProps> = ({
                       type="text"
                       value={sourceReference}
                       onChange={(e) => setSourceReference(e.target.value)}
-                      placeholder="مثال: فتوى دار الإفتاء رقم 2841"
+                      placeholder="مثال: كتاب الطهارة من سبل السلام ص 142 أو مرجع من مكتبة تراث"
                       className="w-full text-xs p-2 rounded-lg border border-stone-300 dark:border-[#273244] bg-white dark:bg-[#1A202C] text-stone-900 dark:text-[#F3F4F6] placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:border-emerald-700 dark:focus:border-emerald-500"
                     />
                   </div>

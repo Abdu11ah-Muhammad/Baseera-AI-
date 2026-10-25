@@ -173,3 +173,93 @@ export function resolveTurathDeepLink(bookId?: number | string, page?: number | 
   return cleanPage ? `https://app.turath.io/book/${cleanId}?page=${cleanPage}` : `https://app.turath.io/book/${cleanId}`;
 }
 
+export interface CitationIntegrityCheck {
+  isValid: boolean;
+  citationType: 'quran' | 'hadith' | 'book' | 'general';
+  verifiedUrl: string | null;
+  issueDescription?: string;
+}
+
+/**
+ * Programmatic validator for deterministic Islamic citation integrity
+ */
+export function verifyCitationIntegrity(citation: {
+  type?: string;
+  sourceName?: string;
+  surah?: string;
+  ayah?: number | string;
+  referenceNumber?: string | number;
+  bookId?: number | string;
+  page?: number | string;
+  sourceUrl?: string;
+}): CitationIntegrityCheck {
+  const cType = (citation.type || '').toLowerCase();
+  const sName = (citation.sourceName || '').toLowerCase();
+
+  // 1. Quran Validation
+  if (cType === 'quran' || sName.includes('قرآن') || citation.surah) {
+    const rawSurah = citation.surah || '';
+    const cleanSurah = rawSurah.replace(/^سورة\s+/, '').trim();
+    const surahNum = SURAH_NAME_TO_NUMBER[cleanSurah];
+
+    if (rawSurah && !surahNum) {
+      return {
+        isValid: false,
+        citationType: 'quran',
+        verifiedUrl: null,
+        issueDescription: `اسم السورة «${rawSurah}» غير معروف في قائمة سور القرآن الكريم المعتمدة (114 سورة).`,
+      };
+    }
+
+    const ayahNum = typeof citation.ayah === 'string' ? parseInt(citation.ayah.replace(/[^\d]/g, ''), 10) : citation.ayah;
+    const url = resolveQuranDeepLink(cleanSurah, ayahNum);
+    return {
+      isValid: true,
+      citationType: 'quran',
+      verifiedUrl: url,
+    };
+  }
+
+  // 2. Hadith Validation
+  if (cType === 'hadith' || sName.includes('بخاري') || sName.includes('مسلم') || sName.includes('حديث')) {
+    const hadithNum = citation.referenceNumber;
+    const url = resolveHadithDeepLink(citation.sourceName, hadithNum);
+    return {
+      isValid: true,
+      citationType: 'hadith',
+      verifiedUrl: url,
+    };
+  }
+
+  // 3. Turath Book Validation
+  if (cType === 'book' || citation.bookId || (citation.sourceUrl && citation.sourceUrl.includes('turath.io'))) {
+    const url = resolveTurathDeepLink(citation.bookId, citation.page);
+    return {
+      isValid: true,
+      citationType: 'book',
+      verifiedUrl: url || citation.sourceUrl || null,
+    };
+  }
+
+  // 4. Safe URL Whitelist Check
+  let verifiedUrl: string | null = null;
+  if (citation.sourceUrl) {
+    try {
+      const parsed = new URL(citation.sourceUrl);
+      const allowedHosts = ['quran.com', 'sunnah.com', 'app.turath.io', 'dorar.net', 'iifa-aifi.org'];
+      if (allowedHosts.some((h) => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`))) {
+        verifiedUrl = citation.sourceUrl;
+      }
+    } catch {
+      verifiedUrl = null;
+    }
+  }
+
+  return {
+    isValid: true,
+    citationType: 'general',
+    verifiedUrl,
+  };
+}
+
+

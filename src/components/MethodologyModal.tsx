@@ -116,7 +116,7 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({
               </div>
               <div className="p-2.5 rounded-lg bg-stone-50 dark:bg-[#111827] border border-stone-200 dark:border-[#273244]">
                 <strong className="text-rose-800 dark:text-rose-300 block mb-0.5">المستوى D — حالة شخصية تستوجب الإحالة</strong>
-                <p className="text-stone-600 dark:text-[#A7B0BE]">امتناع عن الفتوى الشخصية الحاسمة، وإحالة السائل لدار الإفتاء أو عالم موثوق.</p>
+                <p className="text-stone-600 dark:text-[#A7B0BE]">امتناع عن الفتوى الشخصية الحاسمة، وإحالة السائل للجهات الإفتائية المعتمدة أو عالم موثوق ومؤهل.</p>
               </div>
             </div>
           </div>
